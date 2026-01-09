@@ -4,7 +4,6 @@ import ApiService from "@/services/services";
 import { Link as LinkType } from "@/interface/link.interface";
 import { ExternalLink } from "lucide-react";
 
-// Helper to resolve font classes
 const getFontClass = (font?: string) => {
     switch(font) {
         case 'serif': return 'font-serif';
@@ -24,119 +23,147 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const data = await ApiService.getInstance().getPublicProfile(username);
 
   if (!data || !data.user) return notFound();
-
   const { user } = data;
   const links: LinkType[] = data.links || user.links || [];
   const activeLinks = links.filter((link) => link.is_active);
-
-  // --- 1. EXTRACT THEME SETTINGS (With Defaults) ---
+  // --- 1. THEME SETTINGS ---
   const theme = user.theme || {};
   const bgType = theme.backgroundType || 'gradient';
   const bgColor = theme.backgroundColor || '#4f46e5'; 
   const bgGradient = theme.backgroundGradient || 'from-indigo-500 via-purple-500 to-pink-500';
+  const bgImage = theme.backgroundImage;
   const textColor = theme.textColor || '#ffffff';
   const fontClass = getFontClass(theme.fontFamily);
-  const buttonShape = theme.buttonStyle || 'rounded-full'; // 'rounded-none', 'rounded-lg', 'rounded-full'
+  const btnShape = theme.buttonStyle || 'rounded-full'; 
+  const btnType = theme.buttonType || 'solid';
+  const btnBgColor = theme.buttonBackgroundColor || '#ffffff';
+  const btnTextColor = theme.buttonTextColor || '#000000';
+  const btnShadow = theme.buttonShadow || false;
 
-  // Determine Background Style
-  let containerStyle = {};
-  let containerClass = "min-h-screen flex flex-col items-center py-16 px-4 ";
+  // --- 2. GENERATE STYLES ---
+
+  let containerStyle: React.CSSProperties = { color: textColor };
+  let containerClass = "min-h-screen flex flex-col items-center py-16 px-4 transition-colors duration-500";
 
   if (bgType === 'solid') {
-      containerStyle = { backgroundColor: bgColor };
+      containerStyle.backgroundColor = bgColor;
   } else if (bgType === 'gradient') {
-      // Assuming you store Tailwind classes for gradients. 
-      // If you store CSS strings (e.g., "linear-gradient(...)"), use containerStyle instead.
-      containerClass += ` bg-linear-to-br ${bgGradient}`;
+      containerClass += ` bg-gradient-to-br ${bgGradient}`;
+  } else if (bgType === 'image' && bgImage) {
+      const imageUrl = bgImage.startsWith('http') ? bgImage : `${STORAGE_URL}${bgImage}`;
+      containerStyle.backgroundImage = `url('${imageUrl}')`;
+      containerStyle.backgroundSize = 'cover';
+      containerStyle.backgroundPosition = 'center';
+      containerStyle.backgroundAttachment = 'fixed';
+      containerClass += " relative after:content-[''] after:absolute after:inset-0 after:bg-black/30 after:z-0";
   }
 
+  const getButtonStyle = () => {
+    const base = {
+        color: btnTextColor,
+        boxShadow: btnShadow ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' : 'none',
+        border: '2px solid transparent'
+    };
+
+    if (btnType === 'solid') {
+        return { ...base, backgroundColor: btnBgColor, borderColor: btnBgColor };
+    } else if (btnType === 'outline') {
+        return { ...base, backgroundColor: 'transparent', borderColor: btnBgColor, color: btnBgColor };
+    } else if (btnType === 'transparent') {
+        return { ...base, backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'transparent', backdropFilter: 'blur(10px)' };
+    }
+    return base;
+  };
+
+  const buttonCustomStyle = getButtonStyle();
+
   return (
-    <div 
-        className={`${containerClass} ${fontClass}`} 
-        style={{ ...containerStyle, color: textColor }} // Dynamic Text Color
-    >
+    <>
+    <header><title>{`${user.name} - Elinks`}</title></header>
+    <div className={`${containerClass} ${fontClass}`} style={containerStyle}>
       
-      {/* --- Profile Header --- */}
-      <div className="flex flex-col items-center text-center space-y-4 mb-10 w-full max-w-lg z-10">
-        
-        {/* Avatar */}
-        <div className="relative group">
-            <div className={`absolute -inset-0.5 bg-white/30 ${buttonShape} opacity-75 blur`}></div>
-            <div className={`relative w-28 h-28 ${buttonShape} overflow-hidden border-4 border-white/50 shadow-xl`}>
-            <Image
-                src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${STORAGE_URL}${user.avatar}`) : "/placeholder.png"}
-                alt={user.username}
-                fill
-                className="object-cover bg-white"
-            />
+      <div className="w-full max-w-xl flex flex-col items-center relative z-10">
+
+        <div className="flex flex-col items-center text-center space-y-4 mb-10 w-full">
+            
+            <div className="relative group">
+                <div className={`absolute -inset-1 bg-white/20 ${btnShape} blur opacity-50`}></div>
+                <div className={`relative w-28 h-28 ${btnShape} overflow-hidden border-4 border-white/30 shadow-2xl`}>
+                <Image
+                    src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${STORAGE_URL}${user.avatar}`) : "/placeholder.png"}
+                    alt={user.username}
+                    fill
+                    className="object-cover "
+                />
+                </div>
+            </div>
+
+            {/* User Info */}
+            <div className="space-y-2">
+                <h1 className="text-2xl font-bold tracking-tight drop-shadow-md">{user.name}</h1>
+                {user.bio && (
+                    <p className="max-w-xs mx-auto font-medium opacity-90 leading-relaxed drop-shadow-sm whitespace-pre-wrap">
+                        {user.bio}
+                    </p>
+                )}
             </div>
         </div>
 
-        {/* User Info */}
-        <div className="drop-shadow-md">
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: textColor }}>{user.name}</h1>
+        {/* --- Links List --- */}
+        <div className="w-full space-y-4 pb-20">
+            {activeLinks.length > 0 ? (
+                activeLinks
+                    .sort((a, b) => a.order - b.order)
+                    .map((link) => (
+                        <a
+                            key={link.id}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={buttonCustomStyle}
+                            className={`relative flex items-center w-full p-2 pr-4 transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] group ${btnShape}`}
+                        >
+                            <div className={`shrink-0 w-12 h-12 flex items-center justify-center overflow-hidden mr-4 ${btnShape === 'rounded-full' ? 'rounded-full' : 'rounded-md'}`}
+                                 style={{ backgroundColor: btnType === 'outline' ? btnBgColor : 'rgba(0,0,0,0.05)' }}
+                            >
+                                {link.icon ? (
+                                    <img 
+                                        src={link.icon.startsWith('http') ? link.icon : `${STORAGE_URL}${link.icon}`} 
+                                        alt="" 
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <ExternalLink className="w-5 h-5 opacity-70" style={{ color: btnType === 'outline' ? '#fff' : 'inherit' }} />
+                                )}
+                            </div>
+
+                            <div className="grow flex flex-col justify-center min-h-12">
+                                <h3 className="font-bold text-lg leading-tight text-center pr-12">
+                                    {link.title}
+                                </h3>
+                            </div>
+                            
+                            <div className="absolute right-4 opacity-0 group-hover:opacity-50 transition-opacity">
+                                <ExternalLink size={16} />
+                            </div>
+                        </a>
+                    ))
+            ) : (
+                <div className="text-center py-10 bg-white/10 rounded-xl backdrop-blur-md border border-white/20">
+                    <p className="opacity-80">No links available yet.</p>
+                </div>
+            )}
+        </div>
+      
+        <div className="fixed bottom-6 text-center z-10">
+            <a href="/" className="inline-flex items-center gap-2 px-3 py-1.5 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full text-xs font-bold transition-all text-white border border-white/10">
+                <span>LinkTree</span>
+            </a>
         </div>
 
-        {user.bio && (
-            <p className="max-w-sm font-light leading-relaxed drop-shadow-sm opacity-90" style={{ color: textColor }}>
-                {user.bio}
-            </p>
-        )}
-      </div>
-
-      {/* --- Links List --- */}
-      <div className="w-full max-w-xl space-y-4 z-10 pb-20">
-        {activeLinks.length > 0 ? (
-            activeLinks
-                .sort((a, b) => a.order - b.order)
-                .map((link) => (
-                    <a
-                        key={link.id}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        // Dynamic Button Shape
-                        className={`relative flex items-center w-full min-h-18 p-2 pr-4 bg-white/95 hover:bg-white text-gray-800 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl group border-2 border-transparent hover:border-indigo-100 ${buttonShape}`}
-                    >
-                        {/* ICON */}
-                        <div className={`shrink-0 w-14 h-14 bg-gray-50 flex items-center justify-start overflow-hidden border border-gray-100 mr-4 ${buttonShape === 'rounded-full' ? 'rounded-full' : 'rounded-md'}`}>
-                            {link.icon ? (
-                                <img 
-                                    src={link.icon.startsWith('http') ? link.icon : `${STORAGE_URL}${link.icon}`} 
-                                    alt="" 
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <ExternalLink className="text-gray-400 w-6 h-6 mx-auto" />
-                            )}
-                        </div>
-
-                        {/* CONTENT */}
-                        <div className="grow flex flex-col justify-center">
-                            <h3 className="font-bold text-gray-900 text-lg leading-tight group-hover:text-indigo-600 transition-colors">
-                                {link.title}
-                            </h3>
-                            {link.description && (
-                                <p className="text-xs text-gray-500 font-medium mt-0.5">
-                                    {link.description}
-                                </p>
-                            )}
-                        </div>
-                    </a>
-                ))
-        ) : (
-             <div className="text-center py-10 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-                <p style={{ color: textColor }}>No links available yet.</p>
-            </div>
-        )}
-      </div>
-      
-      {/* Footer */}
-      <div className="fixed bottom-6 text-center z-10">
-        <a href="/" className="inline-flex items-center gap-2 px-4 py-2 bg-black/20 hover:bg-black/30 backdrop-blur-md rounded-full text-xs font-bold transition-all" style={{ color: textColor }}>
-            <span>LinkTree</span>
-        </a>
       </div>
     </div>
+    </>
+    
   );
 }

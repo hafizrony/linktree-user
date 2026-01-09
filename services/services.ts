@@ -124,7 +124,7 @@ class ApiService {
     async updateUser(data: any) {
         const isFormData = data instanceof FormData;
         const res = await fetch(`${ENDPOINTS.USER.UPDATE}`, {
-            method: 'PATCH',
+            method: 'POST',
             headers: getHeaders(isFormData), 
             body: isFormData ? data : JSON.stringify(data),
         });

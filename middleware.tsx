@@ -18,9 +18,9 @@ export function middleware(request: NextRequest) {
   }
 
   // 3. If logged in, don't allow going back to /login or /register
-//   if ((pathname === '/login' || pathname === '/register') && token) {
-//     return NextResponse.redirect(new URL('/dashboard', request.url));
-//   }
+  // if ((pathname === '/login' || pathname === '/register') && token) {
+  //   return NextResponse.redirect(new URL('/dashboard', request.url));
+  // }
 
   // 4. Everything else (like /[username]) is allowed
   return NextResponse.next();

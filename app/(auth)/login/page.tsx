@@ -55,6 +55,8 @@ export default function LoginPage() {
   };
 
   return (
+    <>
+    <header><title>Login - Elinks</title></header>
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#ebf5ee] p-4">
       {/* Brand Logo */}
       <div className="mb-8 text-center">
@@ -113,6 +115,11 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-8 text-center text-sm text-[#000000]/60">
+              <Link href="/Support" className="text-[#01d49f] font-bold hover:underline">
+                FORGOT PASSWORD?
+              </Link>
+        </div>
+        <div className="mt-8 text-center text-sm text-[#000000]/60">
           Don't have an account?{" "}
           <Link href="/register" className="text-[#01d49f] font-bold hover:underline">
             Sign up
@@ -120,5 +127,6 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

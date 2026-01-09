@@ -3,7 +3,7 @@ import { useUser, useLogout } from "@/hook/useUser";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { LogOut, Settings,} from "lucide-react";
+import { LogOut} from "lucide-react";
 
 // --- LOGOUT ALERT MODAL ---
 interface LogoutModalProps {
@@ -19,9 +19,6 @@ function LogoutModal({ isOpen, onClose, onConfirm, isLoggingOut }: LogoutModalPr
   return (
     <div className="fixed inset-0 bg-[#000000]/20 flex items-center justify-center z-100 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl border border-[#ebf5ee] text-center">
-        <div className="w-12 h-12 bg-[#ffa0a3]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <LogOut className="text-[#ffa0a3]" size={24} />
-        </div>
         <h3 className="text-lg font-bold text-[#000000] mb-2">Log Out?</h3>
         <p className="text-[#000000]/70 mb-6 text-sm">Are you sure you want to log out of your account?</p>
         <div className="flex gap-3 justify-center">
@@ -34,7 +31,7 @@ function LogoutModal({ isOpen, onClose, onConfirm, isLoggingOut }: LogoutModalPr
           <button 
             onClick={onConfirm} 
             disabled={isLoggingOut} 
-            className="flex-1 px-4 py-2.5 bg-[#ffa0a3] text-white font-bold rounded-lg hover:bg-[#ff8f92] transition-colors disabled:opacity-70 shadow-sm"
+            className="flex-1 px-4 py-2.5 bg-[#f33137] text-white font-bold rounded-lg hover:bg-[#ff8f92] transition-colors disabled:opacity-70 shadow-sm"
           >
             {isLoggingOut ? "Logging out..." : "Log Out"}
           </button>
@@ -95,22 +92,21 @@ export default function Navbar() {
                   <div className="w-8 h-8 bg-[#ebf5ee] rounded-full animate-pulse" />
               ) : (
                   <div className="relative" ref={dropdownRef}>
-                      {/* Avatar Button */}
                       <button 
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         className="flex items-center gap-2 p-1 rounded-full hover:bg-[#ebf5ee]/50 transition-colors focus:outline-none"
                       >
-                          <div className="relative w-9 h-9">
-                              <Image
-                                  src={user?.avatar ? `${imageUrl}${user.avatar}` : "/placeholder.png"}
-                                  alt="Avatar"
-                                  fill
-                                  className="rounded-full object-cover border border-[#ebf5ee]"
-                              />
-                          </div>
+                          <div className="relative w-10 h-10"> 
+                            <Image
+                                src={user?.avatar ? `${imageUrl}${user.avatar}` : "/placeholder.png"}
+                                alt="Avatar"
+                                fill
+                                sizes="40"
+                                className="rounded-full object-cover border border-[#ebf5ee]"
+                            />
+                        </div>
                       </button>
 
-                      {/* Dropdown Menu */}
                       {isDropdownOpen && (
                         <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-[#ebf5ee] rounded-xl shadow-xl py-2 animate-in fade-in slide-in-from-top-2 duration-200 z-60">
                             <div className="px-4 py-2 border-b border-[#ebf5ee] mb-1">

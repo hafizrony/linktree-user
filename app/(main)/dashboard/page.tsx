@@ -12,6 +12,8 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"links" | "profile">("links");
 
   return (
+    <>
+    <header><title>Dashboard - Elinks</title></header>
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="grow w-full max-w-4xl mx-auto px-4 py-8">
@@ -38,7 +40,7 @@ export default function DashboardPage() {
                 )}
             >
                 <User size={16} />
-                Profile Details
+                Settings
             </button>
         </div>
         <div className="animate-in fade-in duration-300">
@@ -48,5 +50,6 @@ export default function DashboardPage() {
       </main>
       <Footer />
     </div>
+    </>
   );
 }

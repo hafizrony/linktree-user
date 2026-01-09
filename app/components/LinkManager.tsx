@@ -260,14 +260,11 @@ function DeleteModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteModalProp
   return (
     <div className="fixed inset-0 bg-[#000000]/20 flex items-center justify-center z-100 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl border border-[#ebf5ee]">
-        <div className="w-12 h-12 bg-[#ffa0a3]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="text-[#ffa0a3]" size={24} />
-        </div>
         <h3 className="text-lg font-bold text-[#000000] mb-2 text-center">Delete Link?</h3>
         <p className="text-[#000000]/70 mb-6 text-sm text-center">Are you sure you want to delete this link?</p>
         <div className="flex gap-3 justify-center">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 text-[#000000] font-medium hover:bg-[#ebf5ee] rounded-lg transition-colors border border-transparent">Cancel</button>
-          <button onClick={onConfirm} disabled={isDeleting} className="flex-1 px-4 py-2.5 bg-[#ffa0a3] text-white font-bold rounded-lg hover:bg-[#ff8f92] transition-colors disabled:opacity-70 shadow-sm">{isDeleting ? "Deleting..." : "Delete"}</button>
+          <button onClick={onConfirm} disabled={isDeleting} className="flex-1 px-4 py-2.5 bg-[#fa444a] text-white font-bold rounded-lg hover:bg-[#ff8f92] transition-colors disabled:opacity-70 shadow-sm">{isDeleting ? "Deleting..." : "Delete"}</button>
         </div>
       </div>
     </div>
@@ -416,10 +413,8 @@ function SortableLinkItem({ item, onToggle, onEdit, onDelete, onIconUpload }: So
             <button onClick={handleIconClick} className="text-[#000000]/60 hover:text-[#01d49f] relative"><ImageIcon className="w-4 h-4" />
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
             </button>
-            <button className="text-[#000000]/60 hover:text-[#01d49f]"><BarChart2 className="w-4 h-4" /></button>
-            <button className="text-[#000000]/60 hover:text-[#01d49f]"><Zap className="w-4 h-4" /></button>
           </div>
-          <button onClick={() => onDelete(item)} className="text-[#ffa0a3] p-1 rounded hover:bg-[#ffa0a3]/10"><Trash2 className="w-4 h-4" /></button>
+          <button onClick={() => onDelete(item)} className="text-[#ff2d34] p-1 rounded hover:bg-[#ffa0a3]/10"><Trash2 className="w-4 h-4" /></button>
         </div>
       </div>
     </div>
@@ -567,16 +562,12 @@ export default function LinkManager() {
         
         <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="flex gap-2 mr-2">
-                <button onClick={handleShareClick} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold text-[#000000]/70 hover:text-[#000000] hover:bg-[#ebf5ee] transition-colors" title="Share Profile">
-                    <Share2 size={16} />
-                    <span className="hidden sm:inline">Share</span>
-                </button>
                 <a href={user?.username ? `/${user.username}` : '#'} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold text-[#000000]/70 hover:text-[#000000] hover:bg-[#ebf5ee] transition-colors" title="Preview Profile">
                     <Eye size={16} />
                     <span className="hidden sm:inline">Preview</span>
                 </a>
             </div>
-            <button onClick={handleCreateClick} disabled={!canCreate} className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-sm transition-all shadow-sm active:scale-95 ml-auto sm:ml-0 ${canCreate ? 'bg-[#01d49f] text-white hover:bg-[#00b88a]' : 'bg-[#ebf5ee] text-[#ffa0a3] cursor-not-allowed'}`}>
+            <button onClick={handleCreateClick} disabled={!canCreate} className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-sm transition-all shadow-sm active:scale-95 ml-auto sm:ml-0 ${canCreate ? 'bg-[#01d49f] text-white hover:bg-[#00b88a]' : 'bg-[#ebf5ee] text-[#fe4e54] cursor-not-allowed'}`}>
                 {canCreate ? <Plus size={18} /> : <Lock size={16} />}
                 {canCreate ? "Add Link" : "Limited"}
             </button>

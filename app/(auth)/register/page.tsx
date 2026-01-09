@@ -14,6 +14,7 @@ export default function RegisterPage() {
   
   const [formData, setFormData] = useState({
     name: "",
+    username: "",
     email: "",
     password: "",
     password_confirmation: ""
@@ -30,7 +31,7 @@ export default function RegisterPage() {
 
     try {
       // Ensure this URL matches your backend
-      const res = await fetch("http://192.168.100.64:8000/api/register", {
+      const res = await fetch("http://localhost:8000/api/register", {
         method: "POST",
         body: JSON.stringify(formData),
         headers: { 
@@ -60,6 +61,8 @@ export default function RegisterPage() {
   };
 
   return (
+    <>
+    <header><title>Register - Elinks</title></header>
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#ebf5ee] p-4">
       {/* Brand Logo */}
       <div className="mb-8 text-center">
@@ -86,12 +89,25 @@ export default function RegisterPage() {
                 type="text"
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-3 bg-[#ebf5ee]/30 border border-[#ebf5ee] rounded-xl focus:ring-2 focus:ring-[#01d49f] outline-none text-[#000000] placeholder-[#000000]/30 transition-all"
-                placeholder="e.g. John Doe"
+                placeholder="e.g. Heng Dara"
                 required
               />
             </div>
           </div>
-
+          <div>
+            <label className="block text-sm font-bold text-[#000000] mb-2">Username</label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#000000]/40" size={18} />
+              <input
+                name="username"
+                type="text"
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 py-3 bg-[#ebf5ee]/30 border border-[#ebf5ee] rounded-xl focus:ring-2 focus:ring-[#01d49f] outline-none text-[#000000] placeholder-[#000000]/30 transition-all"
+                placeholder="e.g. HengDara"
+                required
+              />
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-bold text-[#000000] mb-2">Email Address</label>
             <div className="relative">
@@ -158,5 +174,6 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
