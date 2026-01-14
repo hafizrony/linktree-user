@@ -16,12 +16,15 @@ import {
   CheckCircle,
   Copy,
   Trash2,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/untils";
 
 // Helper for storage URL
 const STORAGE_URL =
   process.env.NEXT_PUBLIC_IMAGE || "http://192.168.100.64:8000/storage/";
+
+const MAX_FILE_SIZE = 2 * 1024 * 1024; 
 
 // --- TYPES ---
 interface ThemeSettings {
@@ -163,10 +166,10 @@ export default function ProfileSettings() {
   const [openSection, setOpenSection] = useState<string | null>("details");
   const [copied, setCopied] = useState(false);
 
-  // ✅ success alert
   const [saved, setSaved] = useState(false);
+  
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // ✅ bg remove (UI only until Save)
   const [bgRemoved, setBgRemoved] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -207,12 +210,10 @@ export default function ProfileSettings() {
         }));
       }
 
-      // reset local UI-only flags when user refetch
       setBgRemoved(false);
     }
   }, [user]);
 
-  // --- HANDLERS ---
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
   };
@@ -230,8 +231,16 @@ export default function ProfileSettings() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > MAX_FILE_SIZE) {
+        setErrorMessage("Avatar image is too large. Maximum size is 2MB.");
+        setTimeout(() => setErrorMessage(null), 3000);
+        e.target.value = "";
+        return;
+      }
+
       setAvatarFile(file);
       setAvatarPreview(URL.createObjectURL(file));
+      setErrorMessage(null);
     }
   };
 
@@ -239,17 +248,23 @@ export default function ProfileSettings() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // selecting a new image cancels remove
+    if (file.size > MAX_FILE_SIZE) {
+        setErrorMessage("Background image is too large. Maximum size is 2MB.");
+        setTimeout(() => setErrorMessage(null), 3000);
+        e.target.value = ""; 
+        return;
+    }
+
     setBgRemoved(false);
     setBgFile(file);
     setBgPreview(URL.createObjectURL(file));
     setTheme((p) => ({ ...p, backgroundType: "image" }));
+    setErrorMessage(null);
   };
 
-  // ✅ Remove BG (UI only, save later)
   const handleRemoveBg = (e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation(); // don't open file picker
+    e.stopPropagation();
 
     setBgRemoved(true);
     setBgFile(null);
@@ -258,10 +273,9 @@ export default function ProfileSettings() {
     setTheme((p) => ({
       ...p,
       backgroundImage: null,
-      backgroundType: "gradient", // you can choose "solid" if you want
+      backgroundType: "gradient",
     }));
 
-    // allow re-upload the same file
     if (bgInputRef.current) bgInputRef.current.value = "";
   };
 
@@ -293,18 +307,15 @@ export default function ProfileSettings() {
       const themeKey = key as keyof ThemeSettings;
       const value = theme[themeKey];
 
-      // skip this, we handle separately
       if (themeKey === "backgroundImage") return;
 
       payload.append(`theme[${themeKey}]`, String(value ?? ""));
     });
 
-    // ✅ Tell backend to remove backgroundImage only when user clicked trash
     if (bgRemoved) {
       payload.append("theme[backgroundImage]", "");
     }
 
-    // ✅ Upload new image only when selected
     if (bgFile) {
       payload.append("theme[backgroundImage]", bgFile);
     }
@@ -313,7 +324,6 @@ export default function ProfileSettings() {
       onSuccess: () => {
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
-        // clear local flags after saving
         setBgRemoved(false);
       },
     });
@@ -328,6 +338,14 @@ export default function ProfileSettings() {
 
   return (
     <div className="max-w-2xl mx-auto pb-32">
+      
+      {/* UPDATE: Added Error Alert UI */}
+      {errorMessage && (
+        <div className="fixed top-6 right-6 z-50 bg-[#fa444a] text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <AlertCircle className="w-4 h-4" />
+          {errorMessage}
+        </div>
+      )}
 
       {saved && (
         <div className="fixed top-6 right-6 z-50 bg-[#01d49f] text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2">
@@ -363,7 +381,7 @@ export default function ProfileSettings() {
               ref={avatarInputRef}
               className="hidden"
               accept="image/*"
-              onChange={handleAvatarChange}
+              onChange={handleAvatarChange} 
             />
           </div>
 
@@ -735,7 +753,6 @@ export default function ProfileSettings() {
           </div>
         </AccordionItem>
 
-        {/* Sticky Save Button */}
         <div className="left-0 right-0 flex justify-center z-40 px-4 pointer-events-none">
           <button
             type="submit"

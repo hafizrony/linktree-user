@@ -24,9 +24,6 @@ import {
   Pencil,
   Trash2,
   Image as ImageIcon,
-  Zap,
-  BarChart2,
-  Star,
   Upload,
   X,
   Plus,
@@ -34,9 +31,11 @@ import {
   Share2,
   Eye,
   CheckCircle,
-  AlertCircle,
   Copy,
   Download,
+  Headset,
+  ArrowRight,
+  AlertCircle // UPDATE: Imported AlertCircle
 } from "lucide-react";
 
 import { useLink, useEditLink, useDeleteLink, useCreateLink } from "@/hook/useLink";
@@ -44,6 +43,9 @@ import { useUser } from "@/hook/useUser";
 import { Link as LinkType } from "@/interface/link.interface";
 
 const STORAGE_URL = process.env.NEXT_PUBLIC_IMAGE || "http://192.168.100.64:8000/storage/";
+
+// Constant for Max File Size (2MB)
+const MAX_FILE_SIZE = 2 * 1024 * 1024; 
 
 // ==========================================
 // 1. HELPER COMPONENTS
@@ -67,7 +69,7 @@ function Toast({ message, onClose }: { message: string | null; onClose: () => vo
   );
 }
 
-// --- SHARE MODAL (UPDATED: NO AVATAR, ADD LABEL) ---
+// --- SHARE MODAL ---
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -91,24 +93,16 @@ function ShareModal({ isOpen, onClose, username }: ShareModalProps) {
     const canvas = document.getElementById("react-qrcode-logo") as HTMLCanvasElement;
     if (canvas) {
         try {
-            // Create a new canvas to add the label
             const newCanvas = document.createElement("canvas");
             const ctx = newCanvas.getContext("2d");
-            
-            // Add padding for the label at the bottom
             const labelHeight = 40;
             newCanvas.width = canvas.width;
             newCanvas.height = canvas.height + labelHeight;
             
             if (ctx) {
-                // Fill white background
                 ctx.fillStyle = "#FFFFFF";
                 ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
-                
-                // Draw the original QR code
                 ctx.drawImage(canvas, 0, 0);
-                
-                // Draw the "LinkTree" label
                 ctx.font = "bold 24px sans-serif";
                 ctx.fillStyle = "#000000";
                 ctx.textAlign = "center";
@@ -137,53 +131,28 @@ function ShareModal({ isOpen, onClose, username }: ShareModalProps) {
         <button onClick={onClose} className="absolute right-4 top-4 text-[#000000]/40 hover:text-[#000000]">
             <X size={24} />
         </button>
-        
         <h3 className="text-xl font-bold text-[#000000] mb-1">Share LinkTree</h3>
         <p className="text-sm text-[#000000]/50 mb-6">Scan to visit @{username}</p>
-
-        {/* QR Code Container */}
         <div className="bg-white p-4 rounded-xl mb-6 border-2 border-[#ebf5ee] shadow-sm flex items-center justify-center">
-            <QRCode
-                value={profileUrl}
-                // Avatar/Logo removed as requested
-                size={220} 
-                qrStyle="dots" 
-                eyeRadius={0}  
-                ecLevel="H"    
-                fgColor="#000000"
-                bgColor="#FFFFFF"
-                id="react-qrcode-logo" 
-            />
+            <QRCode value={profileUrl} size={220} qrStyle="dots" eyeRadius={0} ecLevel="H" fgColor="#000000" bgColor="#FFFFFF" id="react-qrcode-logo" />
         </div>
-
-        {/* Actions Grid */}
         <div className="grid grid-cols-2 gap-3 w-full mb-4">
-             <button 
-                onClick={handleDownload}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#ebf5ee] hover:bg-[#d4eadd] text-[#000000] font-bold rounded-xl transition-colors text-sm"
-            >
-                <Download size={18} />
-                Save QR
+             <button onClick={handleDownload} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#ebf5ee] hover:bg-[#d4eadd] text-[#000000] font-bold rounded-xl transition-colors text-sm">
+                <Download size={18} /> Save QR
             </button>
-            <button 
-                onClick={handleCopy}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#000000] hover:bg-[#333333] text-white font-bold rounded-xl transition-colors text-sm"
-            >
-                {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
-                {copied ? "Copied" : "Copy Link"}
+            <button onClick={handleCopy} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#000000] hover:bg-[#333333] text-white font-bold rounded-xl transition-colors text-sm">
+                {copied ? <CheckCircle size={18} /> : <Copy size={18} />} {copied ? "Copied" : "Copy Link"}
             </button>
         </div>
-
         <div className="flex items-center gap-2 text-[#000000]/40 text-xs bg-[#f5f5f5] px-3 py-1.5 rounded-full max-w-full">
-            <Share2 size={12} />
-            <span className="truncate">{profileUrl}</span>
+            <Share2 size={12} /> <span className="truncate">{profileUrl}</span>
         </div>
       </div>
     </div>
   );
 }
 
-// --- ALERT MODAL ---
+// --- ALERT MODAL (For simple info) ---
 function AlertModal({ isOpen, onClose, title, message }: { isOpen: boolean; onClose: () => void; title: string; message: string }) {
   if (!isOpen) return null;
   return (
@@ -196,6 +165,49 @@ function AlertModal({ isOpen, onClose, title, message }: { isOpen: boolean; onCl
         <p className="text-[#000000]/70 mb-6 text-sm">{message}</p>
         <button onClick={onClose} className="w-full bg-[#000000] text-white py-2.5 rounded-lg font-bold hover:bg-[#333333] transition-colors">
             Got it
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// --- LIMIT REACHED MODAL ---
+interface LimitModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  limit: number;
+}
+
+function LimitModal({ isOpen, onClose, limit }: LimitModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-[#000000]/30 flex items-center justify-center z-100 p-4 backdrop-blur-sm animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-[#ebf5ee] relative flex flex-col items-center text-center">
+        <div className="w-14 h-14 bg-[#fa444a]/10 rounded-full flex items-center justify-center mb-4 mt-2">
+            <Lock className="text-[#fa444a]" size={28} />
+        </div>
+        
+        <h3 className="text-xl font-bold text-[#000000] mb-2">Limit Reached</h3>
+        <p className="text-[#000000]/60 mb-6 text-sm leading-relaxed">
+          You have used all <b>{limit}</b> available links. <br/>
+          Contact support to upgrade your plan and unlock unlimited links.
+        </p>
+
+        <a 
+          href="/Support" 
+          className="w-full flex items-center justify-center gap-2 bg-[#01d49f] text-white py-3 rounded-xl font-bold hover:bg-[#333333] hover:scale-[1.02] transition-all shadow-lg shadow-[#000000]/10"
+        >
+            <Headset size={18} />
+            Contact Support
+            <ArrowRight size={16} className="opacity-60" />
+        </a>
+        
+        <button 
+            onClick={onClose}
+            className="mt-3 text-sm font-semibold text-[#000000]/70 transition-colors"
+        >
+            Maybe later
         </button>
       </div>
     </div>
@@ -279,13 +291,27 @@ interface CreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   nextOrder: number;
+  onError: (msg: string) => void; // UPDATE: Added onError prop
 }
 
-function CreateLinkModal({ isOpen, onClose, nextOrder }: CreateModalProps) {
+function CreateLinkModal({ isOpen, onClose, nextOrder, onError }: CreateModalProps) {
   const createMutation = useCreateLink();
   const [formData, setFormData] = useState({ title: "", url: "", description: "", icon: null as File | null });
 
   useEffect(() => { if (isOpen) setFormData({ title: "", url: "", description: "", icon: null }); }, [isOpen]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        if (file.size > MAX_FILE_SIZE) {
+            // UPDATE: Use callback instead of alert
+            onError("File is too large. Maximum size is 2MB.");
+            e.target.value = ""; // Clear input
+            return;
+        }
+        setFormData({ ...formData, icon: file });
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,7 +343,7 @@ function CreateLinkModal({ isOpen, onClose, nextOrder }: CreateModalProps) {
           <div>
             <label className="block text-sm font-medium text-[#000000] mb-1">Thumbnail</label>
             <div className="border-2 border-dashed border-[#ebf5ee] rounded-lg p-4 text-center relative hover:bg-[#ebf5ee]/50 transition-colors">
-              <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={(e) => setFormData({ ...formData, icon: e.target.files?.[0] || null })} />
+              <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleFileChange} />
               <div className="flex flex-col items-center pointer-events-none">
                 <Upload className={`mb-2 ${formData.icon ? 'text-[#01d49f]' : 'text-[#000000]'}`} size={20} />
                 <span className="text-sm text-[#000000]">{formData.icon ? formData.icon.name : "Click to upload"}</span>
@@ -343,15 +369,28 @@ interface SortableLinkItemProps {
   onEdit: (item: LinkType, field: "title" | "url" | "description") => void;
   onDelete: (item: LinkType) => void;
   onIconUpload: (item: LinkType, file: File) => void;
+  onError: (msg: string) => void; // UPDATE: Added onError prop
 }
 
-function SortableLinkItem({ item, onToggle, onEdit, onDelete, onIconUpload }: SortableLinkItemProps) {
+function SortableLinkItem({ item, onToggle, onEdit, onDelete, onIconUpload, onError }: SortableLinkItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : "auto", opacity: isDragging ? 0.8 : 1 };
   const handleIconClick = () => fileInputRef.current?.click();
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) onIconUpload(item, file); };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
+      const file = e.target.files?.[0]; 
+      if (file) {
+        if (file.size > MAX_FILE_SIZE) {
+            // UPDATE: Use callback instead of alert
+            onError("File is too large. Maximum size is 2MB.");
+            e.target.value = ""; // Clear input
+            return;
+        }
+        onIconUpload(item, file); 
+      }
+  };
 
   return (
     <div ref={setNodeRef} style={style} className={`bg-white border rounded-xl shadow-sm flex items-stretch overflow-hidden transition-all ${isDragging ? "ring-2 ring-[#01d49f] shadow-xl" : "border-[#ebf5ee]"}`}>
@@ -434,14 +473,16 @@ export default function LinkManager() {
   // States
   const [items, setItems] = useState<LinkType[]>([]);
   
+  // Alert States
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // UPDATE: Added Error Message State
+  const [alertInfo, setAlertInfo] = useState<{ isOpen: boolean; title: string; message: string }>({ isOpen: false, title: "", message: "" });
+  
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false); 
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  
-  // Alert/Toast States
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [alertInfo, setAlertInfo] = useState<{ isOpen: boolean; title: string; message: string }>({ isOpen: false, title: "", message: "" });
   
   // Edit Modal States
   const [editState, setEditState] = useState<{ isOpen: boolean; item: LinkType | null; field: string }>({ isOpen: false, item: null, field: "" });
@@ -462,22 +503,17 @@ export default function LinkManager() {
   const currentCount = items.length;
   const canCreate = currentCount < linkLimit;
 
-  // HANDLERS
-  const handleShareClick = () => {
-    if (user?.username) {
-        setIsShareModalOpen(true);
-    }
+  // Handler to trigger the Red Alert
+  const handleError = (msg: string) => {
+    setErrorMessage(msg);
+    setTimeout(() => setErrorMessage(null), 3000); // Auto hide after 3s
   };
 
   const handleCreateClick = () => {
     if (canCreate) {
       setIsCreateModalOpen(true);
     } else {
-      setAlertInfo({ 
-        isOpen: true, 
-        title: "Limit Reached", 
-        message: `You have used ${currentCount} / ${linkLimit} links. Please upgrade your plan to add more.` 
-      });
+      setIsLimitModalOpen(true);
     }
   };
 
@@ -529,10 +565,30 @@ export default function LinkManager() {
 
   return (
     <div className="w-full space-y-6">
-      <CreateLinkModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} nextOrder={items.length} />
+      
+      {errorMessage && (
+        <div className="fixed top-6 right-6 z-50 bg-[#fa444a] text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <AlertCircle className="w-4 h-4" />
+          {errorMessage}
+        </div>
+      )}
+
+      <CreateLinkModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        nextOrder={items.length} 
+        onError={handleError} // Passed error handler
+      />
+      
       <DeleteModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={confirmDelete} isDeleting={deleteMutation.isPending} />
       <AlertModal isOpen={alertInfo.isOpen} onClose={() => setAlertInfo({ ...alertInfo, isOpen: false })} title={alertInfo.title} message={alertInfo.message} />
       
+      <LimitModal 
+        isOpen={isLimitModalOpen} 
+        onClose={() => setIsLimitModalOpen(false)} 
+        limit={linkLimit} 
+      />
+
       <ShareModal 
         isOpen={isShareModalOpen} 
         onClose={() => setIsShareModalOpen(false)} 
@@ -554,7 +610,7 @@ export default function LinkManager() {
         <div>
             <h2 className="text-2xl font-bold text-[#000000] tracking-tight">My Links</h2>
             {user && (
-                <p className={`text-xs font-semibold mt-1 ${!canCreate ? 'text-[#ffa0a3]' : 'text-[#000000]/40'}`}>
+                <p className={`text-xs font-semibold mt-1 ${!canCreate ? 'text-[#fa444a]' : 'text-[#000000]/40'}`}>
                     {currentCount} / {linkLimit} links used
                 </p>
             )}
@@ -567,9 +623,17 @@ export default function LinkManager() {
                     <span className="hidden sm:inline">Preview</span>
                 </a>
             </div>
-            <button onClick={handleCreateClick} disabled={!canCreate} className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-sm transition-all shadow-sm active:scale-95 ml-auto sm:ml-0 ${canCreate ? 'bg-[#01d49f] text-white hover:bg-[#00b88a]' : 'bg-[#ebf5ee] text-[#fe4e54] cursor-not-allowed'}`}>
+            
+            <button 
+                onClick={handleCreateClick} 
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-sm transition-all shadow-sm active:scale-95 ml-auto sm:ml-0 
+                ${canCreate 
+                    ? 'bg-[#01d49f] text-white hover:bg-[#00b88a]' 
+                    : 'bg-[#ebf5ee] text-[#fa444a] hover:bg-[#ebf5ee]/80' 
+                }`}
+            >
                 {canCreate ? <Plus size={18} /> : <Lock size={16} />}
-                {canCreate ? "Add Link" : "Limited"}
+                {canCreate ? "Add Link" : "Limit Reached"}
             </button>
         </div>
       </div>
@@ -585,6 +649,7 @@ export default function LinkManager() {
                 onEdit={(item, field) => handleEditClick(item, field)}
                 onDelete={handleDeleteClick}
                 onIconUpload={handleIconUpload}
+                onError={handleError} 
               />
             ))}
           </div>
